@@ -1,0 +1,22 @@
+whiteboard-app/
+├── README.md          # Project description, setup instructions, etc.
+├── src/               # Source code
+│   ├── components/      # UI components (React, Vue, etc.)
+│   │   ├── Whiteboard.js   # Main whiteboard component
+│   │   ├── Toolbar.js      # Toolbar with annotation tools
+│   │   ├── ColorPicker.js  # Color selection component
+│   │   └── ...
+│   ├── utils/           # Utility functions
+│   │   ├── drawing.js    # Drawing-related functions
+│   │   ├── image.js      # Image handling functions
+│   │   ├── ai.js         # AI-powered annotation functions (if applicable)
+│   │   └── ...
+│   ├── App.js           # Main application component
+│   ├── index.js         # Entry point
+├── public/            # Static assets (HTML, CSS, images)
+│   ├── index.html       # Main HTML file
+│   ├── styles.css       # Global styles
+│   └── ...
+├── package.json       # Project dependencies and scripts (if using Node.js)
+├── .gitignore         # Files to ignore in Git
+└── ...
