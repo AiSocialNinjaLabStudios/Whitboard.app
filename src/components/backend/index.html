@@ -1,0 +1,428 @@
+<!DOCTYPE index.html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to LLM Module Cloning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals with a Tech Blue Accent -->
+    <!-- Application Structure Plan: A tabbed, single-page application is chosen for optimal user navigation. This structure allows users, likely developers or researchers, to jump directly to the section most relevant to their needs (e.g., core concepts, specific methodologies, or framework tools) without linear scrolling. The flow is designed to go from the 'Why' (Concepts), to the 'How' (Methodologies), to the 'With What' (Frameworks), and finally to 'In Practice' (Best Practices/Use Cases), creating a logical and intuitive journey through the complex topic. This non-linear, thematic structure prioritizes user-driven exploration over the rigid format of the original report. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Comparing different cloning techniques (Feature Extraction, Fine-Tuning, PEFT).
+        - Goal: Compare the trade-offs between these techniques.
+        - Viz/Presentation: An interactive bar chart.
+        - Interaction: Hovering over bars shows tooltips with specific values for 'Computational Cost' and 'Model Adaptability'. This allows for quick, visual comparison.
+        - Justification: A chart is more effective than a text description for comparing multiple options across multiple criteria. It makes the trade-offs immediately apparent.
+        - Library/Method: Chart.js on a Canvas element.
+        - Report Info: Explaining the workflow of each technique.
+        - Goal: Organize and clarify complex processes.
+        - Viz/Presentation: Simple diagrams built with structured HTML and Tailwind CSS.
+        - Interaction: These are static visual aids, part of the content revealed by tab clicks.
+        - Justification: Custom diagrams using HTML/CSS avoid forbidden libraries (SVG/Mermaid) while providing clear, accessible visual explanations that integrate seamlessly with the app's styling.
+        - Report Info: Listing framework-specific functions (Table 1 & 2 from report).
+        - Goal: Inform and provide a quick reference.
+        - Viz/Presentation: Interactive tabs for each framework, displaying key functions in a clean, table-like layout.
+        - Interaction: Clicking tabs switches the content.
+        - Justification: This organizes a large amount of dense, technical information into manageable, user-selectable chunks, improving on the original static tables.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4; /* Warm neutral background */
+            color: #2c3e50;
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-button.active {
+            color: #3b82f6; /* Tech Blue Accent */
+            border-bottom-color: #3b82f6;
+        }
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .content-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 50vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-3xl md:text-5xl font-bold text-gray-800 mb-2">Interactive Guide to LLM Module Cloning</h1>
+            <p class="text-lg text-gray-600">An exploration of techniques, tools, and best practices for reusing pre-trained model components.</p>
+        </header>
+
+        <nav class="flex justify-center border-b border-gray-200 mb-8">
+            <button data-tab="concepts" class="nav-button active py-4 px-6 text-lg font-medium text-gray-600 hover:text-blue-500">Concepts</button>
+            <button data-tab="methodologies" class="nav-button py-4 px-6 text-lg font-medium text-gray-600 hover:text-blue-500">Methodologies</button>
+            <button data-tab="frameworks" class="nav-button py-4 px-6 text-lg font-medium text-gray-600 hover:text-blue-500">Frameworks</button>
+            <button data-tab="practice" class="nav-button py-4 px-6 text-lg font-medium text-gray-600 hover:text-blue-500">In Practice</button>
+        </nav>
+
+        <main>
+            <!-- Concepts Section -->
+            <section id="concepts" class="content-section active">
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">Core Concepts: The "Why"</h2>
+                    <p class="text-gray-700 mb-6 text-lg">
+                        This section introduces the fundamental ideas behind LLM module cloning. Understanding these concepts is the first step toward leveraging the immense power of pre-trained models efficiently. The core motivation is to save time and computational resources while improving model performance by building on existing knowledge instead of starting from scratch.
+                    </p>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                            <h3 class="font-bold text-xl mb-2">What is Module Cloning?</h3>
+                            <p class="text-gray-600">It's the process of reusing specific components (like layers or sub-networks) from an already trained LLM for a new task. This isn't just a simple copy-paste; it can mean replicating architecture, transferring learned parameters (weights), or adapting functionality for a new domain.</p>
+                        </div>
+                        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                            <h3 class="font-bold text-xl mb-2">Key Motivations</h3>
+                            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                                <li><strong>Efficiency:</strong> Drastically reduces training time and computational cost by avoiding training from scratch.</li>
+                                <li><strong>Performance:</strong> Often leads to better results, especially with limited data, by leveraging knowledge from large-scale pre-training.</li>
+                                <li><strong>Flexibility:</strong> Allows for the creation of smaller, specialized models suitable for resource-constrained environments.</li>
+                            </ul>
+                        </div>
+                    </div>
+                     <div class="mt-8">
+                        <h3 class="font-bold text-xl text-center mb-4">Conceptual Workflow</h3>
+                        <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 text-center">
+                            <div class="p-4 bg-blue-100 border-2 border-dashed border-blue-400 rounded-lg">
+                                <p class="font-semibold">1. Pre-trained LLM</p>
+                                <p class="text-sm">(e.g., BERT, GPT-3)</p>
+                            </div>
+                            <div class="text-2xl font-bold text-blue-500">→</div>
+                            <div class="p-4 bg-green-100 border-2 border-dashed border-green-400 rounded-lg">
+                                <p class="font-semibold">2. Extract/Clone Module</p>
+                                <p class="text-sm">(e.g., Attention Layers)</p>
+                            </div>
+                             <div class="text-2xl font-bold text-green-500">→</div>
+                            <div class="p-4 bg-purple-100 border-2 border-dashed border-purple-400 rounded-lg">
+                                <p class="font-semibold">3. New Task-Specific Model</p>
+                                <p class="text-sm">(e.g., Sentiment Classifier)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Methodologies Section -->
+            <section id="methodologies" class="content-section">
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">Methodologies: The "How"</h2>
+                    <p class="text-gray-700 mb-6 text-lg">
+                        There are several established methods for reusing pre-trained modules, each with its own trade-offs between computational cost, ease of implementation, and adaptability. This section breaks down the most common approaches and provides a visual comparison to help you choose the right technique for your project.
+                    </p>
+                    <div class="mb-8">
+                         <div class="chart-container">
+                            <canvas id="methodologyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="font-bold text-xl mb-2">Feature Extraction</h3>
+                            <p class="text-gray-600 mb-3">This technique uses the pre-trained model as a fixed feature extractor. You freeze the weights of the initial layers and use their outputs (activations) as input for a new, smaller model that you train from scratch. It's fast and less prone to overfitting on small datasets.</p>
+                            <div class="p-4 bg-gray-50 rounded-lg border flex items-center space-x-4">
+                                <div class="p-3 bg-blue-100 rounded text-blue-800 font-mono">Frozen Layers</div>
+                                <div class="text-xl font-bold text-gray-400">+</div>
+                                <div class="p-3 bg-green-100 rounded text-green-800 font-mono">New Trainable Layers</div>
+                            </div>
+                        </div>
+                         <div>
+                            <h3 class="font-bold text-xl mb-2">Fine-Tuning</h3>
+                            <p class="text-gray-600 mb-3">Fine-tuning unfreezes some of the top layers of the pre-trained model and trains them on the new data, typically with a very low learning rate. This allows the model to adapt its learned features to the specifics of the new task, often yielding higher performance than feature extraction.</p>
+                             <div class="p-4 bg-gray-50 rounded-lg border flex items-center space-x-4">
+                                <div class="p-3 bg-blue-100 rounded text-blue-800 font-mono">Frozen Base Layers</div>
+                                <div class="text-xl font-bold text-gray-400">+</div>
+                                <div class="p-3 bg-yellow-100 rounded text-yellow-800 font-mono">Unfrozen/Trainable Top Layers</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl mb-2">Advanced: Parameter-Efficient Fine-Tuning (PEFT)</h3>
+                            <p class="text-gray-600 mb-3">PEFT techniques like LoRA (Low-Rank Adaptation) freeze the entire pre-trained model and inject small, trainable modules into its architecture. This dramatically reduces the number of trainable parameters, making fine-tuning accessible on consumer hardware while achieving performance comparable to full fine-tuning.</p>
+                             <div class="p-4 bg-gray-50 rounded-lg border flex items-center space-x-4">
+                                <div class="p-3 bg-blue-100 rounded text-blue-800 font-mono">Fully Frozen Model</div>
+                                <div class="text-xl font-bold text-gray-400">+</div>
+                                <div class="p-3 bg-red-100 rounded text-red-800 font-mono">Small Trainable Adapters (LoRA)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Frameworks Section -->
+            <section id="frameworks" class="content-section">
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">Frameworks: The "With What"</h2>
+                    <p class="text-gray-700 mb-6 text-lg">
+                        Modern deep learning frameworks provide powerful, high-level APIs that make cloning and reusing LLM modules straightforward. This section serves as a quick playbook, highlighting the key functions and tools available in the most popular libraries. Explore the tabs to see how each framework handles module cloning.
+                    </p>
+                    <div id="framework-tabs" class="w-full">
+                        <div class="border-b border-gray-200">
+                             <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                <button class="framework-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-blue-500 text-blue-600" data-framework="huggingface">Hugging Face</button>
+                                <button class="framework-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-framework="tensorflow">TensorFlow/Keras</button>
+                                <button class="framework-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-framework="pytorch">PyTorch</button>
+                            </nav>
+                        </div>
+                        <div id="huggingface" class="framework-content pt-6">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Function/Tool</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr><td class="px-6 py-4 font-mono">.from_pretrained()</td><td class="px-6 py-4">Loads a pre-trained model and its configuration from the Model Hub.</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">.save_pretrained()</td><td class="px-6 py-4">Saves a model's configuration and weights to a directory.</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">model.state_dict()</td><td class="px-6 py-4">Provides a dictionary of the model's parameters for inspection and modification.</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">Direct Attribute Access</td><td class="px-6 py-4">Accesses specific layers like `model.bert.embeddings` for analysis or replacement.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="tensorflow" class="framework-content pt-6 hidden">
+                             <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Function/Tool</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr><td class="px-6 py-4 font-mono">tf.keras.models.clone_model()</td><td class="px-6 py-4">Creates a copy of a model's architecture (with new, random weights).</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">model.get_layer()</td><td class="px-6 py-4">Accesses a specific layer by name for inspection or feature extraction.</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">model.save_weights()</td><td class="px-6 py-4">Saves only the weights of a model or specific layers.</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">layer.set_weights()</td><td class="px-6 py-4">Loads pre-trained weights into a specific layer.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="pytorch" class="framework-content pt-6 hidden">
+                             <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Function/Tool</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th></tr></thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr><td class="px-6 py-4 font-mono">model.load_state_dict()</td><td class="px-6 py-4">Loads a model's parameter dictionary (state_dict) from a checkpoint.</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">torch.save()</td><td class="px-6 py-4">Saves a serialized object, typically the model's state_dict.</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">Module Attribute Access</td><td class="px-6 py-4">Accesses sub-modules and layers directly, e.g., `model.features[0]`.</td></tr>
+                                        <tr><td class="px-6 py-4 font-mono">torchvision.models.feature_extraction</td><td class="px-6 py-4">Provides utilities to easily extract intermediate layer outputs.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- In Practice Section -->
+            <section id="practice" class="content-section">
+                 <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">In Practice: Application & Strategy</h2>
+                    <p class="text-gray-700 mb-6 text-lg">
+                        Applying these techniques successfully requires strategic thinking. This section covers essential best practices to ensure your efforts are effective, and showcases real-world use cases where module cloning has been successfully applied to solve complex problems.
+                    </p>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="font-bold text-xl mb-4">Best Practices Checklist</h3>
+                            <ul class="space-y-4">
+                                <li class="flex items-start">
+                                    <span class="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 text-green-800 flex items-center justify-center mr-3">✓</span>
+                                    <div>
+                                        <h4 class="font-semibold">Check Compatibility</h4>
+                                        <p class="text-gray-600">Ensure the pre-trained model's original task is semantically similar to your target task.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 text-green-800 flex items-center justify-center mr-3">✓</span>
+                                    <div>
+                                        <h4 class="font-semibold">Manage Resources</h4>
+                                        <p class="text-gray-600">Use techniques like PEFT, quantization, or knowledge distillation for resource-constrained environments.</p>
+                                    </div>
+                                </li>
+                                 <li class="flex items-start">
+                                    <span class="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 text-green-800 flex items-center justify-center mr-3">✓</span>
+                                    <div>
+                                        <h4 class="font-semibold">Optimize Performance</h4>
+                                        <p class="text-gray-600">Always use a validation set to tune hyperparameters like learning rate and batch size for your specific task.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 text-green-800 flex items-center justify-center mr-3">✓</span>
+                                    <div>
+                                        <h4 class="font-semibold">Understand Architecture</h4>
+                                        <p class="text-gray-600">Know whether you're using an encoder, decoder, or encoder-decoder model, as this influences which modules are best to reuse.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                         <div>
+                            <h3 class="font-bold text-xl mb-4">Common Use Cases</h3>
+                            <div class="space-y-4">
+                                <div class="p-4 bg-gray-50 rounded-lg border">
+                                    <h4 class="font-semibold">Domain-Specific Adaptation</h4>
+                                    <p class="text-sm text-gray-600">Fine-tuning LLMs to understand and answer questions in specialized fields like finance, medicine, or law.</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-lg border">
+                                    <h4 class="font-semibold">Modular LLM Agents</h4>
+                                    <p class="text-sm text-gray-600">Building autonomous agents where different LLM modules handle distinct tasks like planning, reasoning, and tool use.</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-lg border">
+                                    <h4 class="font-semibold">Code Clone Detection</h4>
+                                    <p class="text-sm text-gray-600">Using pre-trained code LLMs to identify functionally similar but syntactically different code snippets.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.nav-button');
+            const sections = document.querySelectorAll('.content-section');
+            const frameworkTabs = document.querySelectorAll('.framework-tab');
+            const frameworkContents = document.querySelectorAll('.framework-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    const target = tab.getAttribute('data-tab');
+                    sections.forEach(section => {
+                        section.classList.remove('active');
+                        if (section.id === target) {
+                            section.classList.add('active');
+                        }
+                    });
+                });
+            });
+
+            frameworkTabs.forEach(tab => {
+                 tab.addEventListener('click', () => {
+                    frameworkTabs.forEach(t => {
+                        t.classList.remove('border-blue-500', 'text-blue-600');
+                        t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    });
+                    tab.classList.add('border-blue-500', 'text-blue-600');
+                    tab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                    const target = tab.getAttribute('data-framework');
+                    frameworkContents.forEach(content => {
+                        content.classList.add('hidden');
+                        if (content.id === target) {
+                            content.classList.remove('hidden');
+                        }
+                    });
+                 });
+            });
+
+            const ctx = document.getElementById('methodologyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Feature Extraction', 'Full Fine-Tuning', 'PEFT (e.g., LoRA)'],
+                    datasets: [
+                        {
+                            label: 'Computational Cost',
+                            data: [2, 10, 1],
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Model Adaptability',
+                            data: [3, 10, 7],
+                            backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            title: {
+                                display: true,
+                                text: 'Relative Score (1-10)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    const label = this.getLabelForValue(value);
+                                    if (label.length > 16) {
+                                        return label.match(/.{1,16}/g);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.parsed.y;
+                                    let description = '';
+                                    if (context.dataset.label === 'Computational Cost'){
+                                        if (context.parsed.y <= 2) description = ' (Very Low)';
+                                        else if (context.parsed.y <= 5) description = ' (Low)';
+                                        else description = ' (High)';
+                                    } else {
+                                        if (context.parsed.y <= 3) description = ' (Low)';
+                                        else if (context.parsed.y <= 7) description = ' (Medium)';
+                                        else description = ' (High)';
+                                    }
+                                    return label + description;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Comparison of Module Cloning Methodologies',
+                            font: {
+                                size: 18
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
