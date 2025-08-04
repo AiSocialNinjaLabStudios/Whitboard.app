@@ -1,26 +1,39 @@
 design-ai-app/
-├── backend/             # Backend code (Node.js, Python, etc.)
+├── backend/              Backend code (Node.js, Python, etc.)
 │   ├── src/
-│   │   ├── index.js        # Main entry point
-│   │   ├── routes/       # API routes
-│   │   ├── models/       # Data models
-│   │   ├── controllers/  # Logic for handling requests
-│   │   ├── config/       # Configuration files
-│   │   └── utils/        # Utility functions
-│   ├── package.json    # Dependencies, scripts
-│   └── .env            # Environment variables
-├── frontend/            # Frontend code (React, Vue, Angular)
+│   │   ├── index.js         Main entry point
+│   │   ├── routes/        API routes
+│   │   ├── models/        Data models
+│   │   ├── controllers/   Logic for handling requests
+│   │   ├── config/        Configuration files
+│   │   └── utils/         Utility functions
+│   ├── package.json     Dependencies, scripts
+│   └── .env             Environment variables
+│   └── requirements.txt  Python dependencies
+├── frontend/             Frontend code (React)
 │   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Different views/pages
-│   │   ├── services/      # API communication
-│   │   ├── utils/         # Helper functions
-│   │   ├── App.js          # Main application component
-│   │   └── index.js        # Entry point
-│   ├── public/          # Static assets (HTML, CSS, images)
-│   ├── package.json    # Dependencies, scripts
-│   └── .env            # Environment variables
-├── docs/                # Documentation
-├── .gitignore           # Files to ignore in Git
-├── README.md            # Project description, setup instructions
-└── LICENSE              # License information
+│   │   ├── components/     Reusable UI components
+│   │   ├── pages/          Different views/pages
+│   │   ├── services/       API communication
+│   │   ├── utils/          Helper functions
+│   │   ├── App.js           Main application component
+│   │   └── index.js         Entry point
+│   ├── public/           Static assets (HTML, CSS, images)
+│   ├── package.json     Dependencies, scripts
+│   └── .env             Environment variables
+├── docs/                 Documentation
+├── .gitignore            Files to ignore in Git
+├── README.md             Project description, setup instructions
+└── LICENSE               License information
+
+# Install Python dependencies
+pip install -r backend/requirements.txt
+
+# Install Node.js dependencies for backend
+npm install --prefix backend
+
+# Install Node.js dependencies for frontend
+npm install --prefix frontend
+
+# Install transformers library
+pip install transformers
