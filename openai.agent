@@ -1,0 +1,178 @@
+Phase‑1 (authoritative WebSocket + Node.js/TypeScript + Prisma/SQLite). I'll mentor you through architecture, tradeoffs, and a pragmatic, maintainable plan. I’ll explain why for each recommendation so you can reason about future changes.
+
+High‑level architecture (Phase‑1, authoritative server)
+Components
+Browser client: canvas UI, pointer events → serialize stroke ops → send to server via WebSocket. Minimal app state: local undone stack for optimistic undo, but canonical state from server.
+Authoritative WebSocket server (Node.js + TypeScript): single source of truth per room. Validates ops, applies them to room state, broadcasts to other clients.
+Persistence layer (Prisma + SQLite): periodic snapshots of room state (JSON), lightweight metadata. Optional per‑op table if you want op-log later.
+Minimal HTTP API (Express): create/list rooms, serve static client for dev, health checks, graceful shutdown endpoints.
+Dev tooling: tests (vitest/jest), linter (ESLint), formatting (Prettier).
+Why this shape
+Simplicity and determinism: authoritative server reduces requirements on client logic and avoids complex merge logic initially.
+Fast to implement and easy to reason about correctness for a developer new to real‑time systems.
+Clear upgrade path: you can later add CRDTs/Yjs for offline-first and conflict-free merging.
+Real‑time tech choice & main challenges
+Choice: native WebSockets (ws package) + simple JSON messages
+Why: native WebSocket dependency is minimal, broadly understood, and integrates cleanly with Node/TS. Using socket.io adds convenience but additional abstraction (and possible version coupling) that complicates learning the fundamentals.
+Challenges and how to address them
+Ordering & consistency
+Problem: concurrent operations from different clients can conflict (two users drawing at same time is fine; two clients clearing or undoing needs ordering).
+Phase‑1 handling: server applies ops in arrival order and broadcasts. If you need stronger causal guarantees later, migrate to CRDTs (Yjs) or attach causal metadata.
+Practical fix: keep ops small (strokes with unique ids) and make destructive actions (clear) explicit with timestamps/sequence numbers so clients can reconcile.
+Latency and UX
+Problem: network delay leads to perceived lag.
+Fix: optimistic local rendering — client draws locally immediately and sends op; server accepts and broadcasts. Clients must deduplicate by stroke id.
+Reconnect/resync
+Problem: client reconnects should receive canonical state.
+Fix: on join send init_state snapshot (full state). Use periodic snapshotting on server for persistence; keep in-memory state for active rooms for low-latency.
+Backpressure & message flood
+Problem: pointermove events can generate many points.
+Fix: client-side throttling/sampling, compress points (e.g., only send simplified strokes or every N ms), batch small ops.
+Scalability and single process limits
+Problem: a single Node process cannot hold all rooms for many users.
+Fix: phase‑1: accept single‑process limits. For scale, move to multi‑process / stateless WS frontends with external state (CRDT replicas + shared persistence), or use sticky sessions + Redis pub/sub for room synchronization.
+Security & malicious clients
+Validate incoming messages (shape, sizes, rate). Limit stroke size and points per stroke. Rate limit per connection and per room.
+Data serialization: JSON vs binary (Protobuf/msgpack)
+JSON (recommended for Phase‑1)
+Pros: human readable, no schema toolchain, immediate debugging in browser devtools and logs, fast iteration.
+Cons: larger payloads (but typically fine for MVP), no enforced schema at runtime.
+Why choose it now: prioritizes developer velocity and clarity. Use JSON and add lightweight runtime validation (zod/io-ts) to catch malformed messages.
+Binary alternatives (Protobuf / MessagePack / CBOR)
+Pros: smaller messages, schema evolution, faster parsing for large payloads.
+Cons: tooling overhead, more complex debugging, learning curve.
+When to adopt: when bandwidth or serialization latency becomes a real bottleneck (highly concurrent large rooms).
+CRDT wire formats
+If you adopt CRDT (Yjs), they have their own binary docs/encodings which are efficient and incremental. Transitioning then makes sense only once you need offline/merge semantics.
+Initial data model sketch (practical, maintainable)
+Design principles
+Keep Room state as concise JSON snapshot of strokes (array of stroke ops). Each stroke is immutable and identified by id.
+Persist snapshots, not every op, to reduce write amplification.
+Keep per‑room in memory for active rooms; lazily load snapshot on first join.
+Key entities (Prisma-friendly)
+Room
+id: String (room id)
+stateJson: Json — full snapshot { strokes: [StrokeOp], lastModified: Date }
+updatedAt: DateTime
+(Optional) Stroke (for future op-log)
+id: String (stroke id) @id
+roomId: String
+userId: String
+strokeJson: Json
+createdAt: DateTime
+UserSession (ephemeral, in-memory)
+socketId, userId, username, joinedAt, lastSeen, cursor
+StrokeOp shape (example)
+{ id: "uuid-v4", userId: "u123", username: "alice", stroke: { color: "#000", width: 3, points: [{x:12,y:34}, ...] }, createdAt: "2025-12-25T..." , meta: { tool: "pen" } }
+RoomState (example)
+{ roomId: "demo", strokes: [StrokeOp], lastModified: "2025-12-25T..." }
+Why this shape
+Immutable stroke ops are easy to reason about and deduplicate across clients.
+JSON snapshot fits well in Prisma/SQLite for quick retrieval on reconnect.
+Persistence strategy (safe and efficient)
+In‑memory state for active rooms
+Keep full RoomState in memory keyed by roomId. Fast reads/writes and broadcasts.
+Snapshot persistence
+Save the full room snapshot to DB:
+Periodic saver: every 3–10s if room dirty.
+On last-client disconnect: force a save.
+On graceful shutdown: save all dirty rooms.
+Why snapshots: fewer writes, simpler to implement. Choose interval based on acceptable data-loss window (5s means up to ~5s of ops lost on crash).
+Optional op-log approach (phase‑1 -> phase‑2)
+Keep per-op persistence (append-only stroke table) for full history and replay. Use snapshot + op-log technique to limit replay size.
+Migration considerations
+If room state grows unbounded, switch to chunked snapshots or store strokes in pages (e.g., store most recent N strokes in snapshot and older strokes in archive table).
+Undo / redo design (authoritative server simple approach)
+Approach
+Client requests undo by sending undo with strokeId (or send undo request -> server removes stroke from live state).
+Server checks permissions (only allow user to undo their own strokes, unless global undo is allowed).
+Server updates in-memory state (mark stroke as removed or delete from array), broadcasts op_broadcast of type undo (with strokeId).
+Persisted snapshot will reflect the removal on next save.
+Why this approach
+Simple and easy to reason about. Not conflict-free like CRDT-based collaborative undo, but acceptable for Phase‑1.
+Caveat
+Collaborative undo in CRDTs is complex. For now, keep undo scoped to the initiating user or provide global clear with timestamp.
+Message protocol (simple, explicit)
+Principles
+Small set of clear message types, each with strict JSON schema validated server-side.
+Every client message contains: type, roomId, userId (and optionally username), idempotency token if relevant.
+Example messages
+Client -> Server
+{ type: "join_room", roomId: "demo", userId: "u1", username: "alice" }
+{ type: "draw_op", op: StrokeOp }
+{ type: "clear", userId: "u1", ts: "..." }
+{ type: "undo", strokeId: "uuid" }
+{ type: "presence", cursor: {x,y} }
+Server -> Client
+{ type: "init_state", state: RoomState }
+{ type: "op_broadcast", op: StrokeOp, fromUserId: "u1" }
+{ type: "undo_broadcast", strokeId: "uuid", byUserId: "u1" }
+{ type: "user_joined", userId, username }
+{ type: "user_left", userId }
+{ type: "ack", messageId? }
+{ type: "error", code, message }
+Why explicit types
+Easier to validate and test. Easier to extend with versioning later.
+Concurrency, validation, and sanitization
+Server-side validation
+Use a small schema library (zod/io-ts) to validate message shape and bounds (max points per stroke, max bytes).
+Reject malformed or oversized messages.
+Rate limits and throttles
+Implement per-connection and per-room rate limits (ops per second).
+Drop or queue excessive messages.
+Deduplication
+Use stroke ids for deduplication. If server receives op with id already applied, ignore.
+Scaling roadmap (how to get from Phase‑1 to production)
+Short term (scale the MVP)
+Horizontal WebSocket servers behind a load balancer with sticky sessions + Redis pub/sub to broadcast ops between processes (still authoritative but distributed).
+Persist snapshots to scalable DB (Postgres).
+Medium term (real-time correctness & offline)
+Introduce CRDTs (Yjs) for per-room document replicated across servers. Use a central persistence for Yjs documents (y-leveldb, Postgres, etc.) and y-websocket for sync.
+CRDT benefits: offline edits, merge-on-reconnect, conflict-free collaborative behavior.
+Long term (multi-region, large teams)
+Use sharding for rooms, event-sourcing + append-only op-logs, and materialized snapshots.
+Add authentication, ACLs, and per-room quotas.
+Observability, testing, reliability
+Logging: structured logs (json), include roomId, userId, event types, error stack. Avoid logging full state indiscriminately.
+Metrics: ops/sec, active rooms, connections, persistence saves, error rates, avg serialization size.
+Tracing: instrument join and save operations for latency.
+Tests:
+Unit tests for store (load/save snapshot).
+Integration tests that spin a WS server and simulate two clients exchanging ops.
+Property tests for idempotency/deduplication.
+Chaos: test reconnect scenarios and server restart to ensure resync is robust.
+Security basics
+Sanitize inputs to prevent oversized payloads and injection into logs.
+Use TLS for production WebSockets (wss://).
+Implement simple auth in Phase‑1: token or signed room invite links. At minimum, enforce username length and roomId patterns.
+Avoid storing sensitive info in room snapshots.
+Developer onboarding / tasks (practical prioritized checklist)
+Day 0: scaffolding
+Create server/ with package.json, tsconfig, basic Express app and ws server skeleton.
+Add Prisma schema with Room model and generate client.
+Day 1: in‑memory room management + WS protocol
+Implement room map, join flow, init_state, op_broadcast, basic draw_op handling with validation.
+Implement client-side minimal changes: connect WS, join, draw local strokes, send draw_op, render incoming op_broadcast.
+Day 2: persistence and snapshotting
+Implement store module (load/save via Prisma). Save snapshots every 5s if dirty, on last disconnect, and on shutdown.
+Add unit tests for store.
+Day 3: UX & robustness
+Reconnect with exponential backoff, deduplication by id, client-side throttling for pointer events.
+Implement undo/clear messages.
+Day 4: polish & docs
+Add README with run steps and testing instructions. Add ESLint/Prettier and basic CI script to run tests.
+Acceptance criteria
+Two browser windows in same room see each other’s strokes in real time.
+Reloading a page after creating strokes recovers persisted strokes.
+Server persists snapshots on interval and on graceful shutdown.
+Unit tests for store pass.
+Example Prisma model (simple)
+Room model (Prisma schema snippet)
+model Room { id String @id state Json updatedAt DateTime @updatedAt }
+Optional Stroke model (op-log)
+model Stroke { id String @id roomId String userId String stroke Json createdAt DateTime @default(now()) @@index([roomId]) }
+Final notes — why this plan helps the learner
+Stepwise complexity: you start with a clear authoritative model that’s easy to reason about and debug. You learn core real‑time patterns (socket lifecycle, validation, snapshotting) before adding CRDT complexity.
+Explicit invariants: immutable stroke ops, unique ids, server-applied ordering make reasoning and tests straightforward.
+Upgrade path: each choice (snapshot format, op ids, presence schema) is selected to be compatible with future CRDT or multi‑process designs.
+Emphasis on maintainability: small modules (ws handling, store/persistence, room lifecycle) with tests and clear boundaries let a junior engineer iterate safely.
