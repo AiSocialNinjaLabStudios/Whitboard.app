@@ -1,0 +1,39 @@
+.gitattributes file for a GitHub repository
+
+Handle line endings automatically for text files
+text=auto
+
+Explicitly declare text files and normalize line endings
+*.c text
+*.cpp text
+*.h text
+*.java text
+*.py text
+*.js text
+*.css text
+*.html text
+*.md text
+
+Binary files should be treated as binary and not modified
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+
+Configure diff behavior for specific files
+*.lock -diff
+*.min.js -diff
+*.min.css -diff
+
+Merge strategies
+*.lock merge=ours
+
+Linguist settings for GitHub language detection
+*.svg linguist-vendored
+*.min.js linguist-generated
+
+End of .gitattributes
